@@ -205,6 +205,8 @@ function conf_ufw() {
 
 	);
 
+	sysctl -w net.ipv4.ip_forward=1
+
 	if [[ $VERB = 1 ]]; then
 		echo -e
 		sed -i '/# START OPENVPN RULES/,/# END OPENVPN RULES/d' /etc/ufw/before.rules
