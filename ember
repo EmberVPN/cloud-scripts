@@ -6,7 +6,7 @@ export VERB=0
 # Color stuff
 RED="\e[38;5;196m"
 ORANGE="\e[38;5;166m"
-GRAY="\e[38;5;235m"
+GRAY="\e[38;5;245m"
 GREEN="\e[38;5;42m"
 
 # Print version
