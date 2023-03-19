@@ -60,7 +60,7 @@ function install() {
 function init_pki() {
 	echo -ne "   "$GRAY"Initializing Easy RSA PKI... \e[0m"
 
-	mkdir -p ~/easy-rsa ~/client-configs
+	mkdir -p ~/easy-rsa ~/client-configs/keys
 	ln -fs /usr/share/easy-rsa/* ~/easy-rsa/
 	cd ~/easy-rsa
 	chmod 700 ~/easy-rsa
@@ -355,6 +355,25 @@ while [ "$1" ]; do
 				systemctl -f enable openvpn-server@server.service &> /dev/null || errorcheck
 				systemctl start openvpn-server@server.service &> /dev/null || errorcheck
 			fi
+
+			# Create config generator
+			mkdir -p ~/client-configs/files
+			echo '#!/bin/bash' > ~/client-configs/make_config.sh;
+			echo "KEY_DIR=~/client-configs/keys" >> ~/client-configs/make_config.sh;
+			echo "OUTPUT_DIR=~/client-configs/files" >> ~/client-configs/make_config.sh;
+			echo "BASE_CONFIG=~/client-configs/base.conf" >> ~/client-configs/make_config.sh;
+			echo 'cat ${BASE_CONFIG} \' >> ~/client-configs/make_config.sh;
+			echo '	<(echo -e "\n<ca>") \' >> ~/client-configs/make_config.sh;
+			echo '	${KEY_DIR}/ca.crt \' >> ~/client-configs/make_config.sh;
+			echo '	<(echo -e "\n</ca>\n<cert>") \' >> ~/client-configs/make_config.sh;
+			echo '	${KEY_DIR}/${1}.crt \' >> ~/client-configs/make_config.sh;
+			echo '	<(echo -e "\n</cert>\n<key>") \' >> ~/client-configs/make_config.sh; 
+			echo '	${KEY_DIR}/${1}.key \' >> ~/client-configs/make_config.sh; 
+			echo '	<(echo -e "</key>\n<tls-crypt>") \' >> ~/client-configs/make_config.sh; 
+			echo '	${KEY_DIR}/ta.key \' >> ~/client-configs/make_config.sh; 
+			echo '	<(echo -e "</tls-crypt>") \' >> ~/client-configs/make_config.sh;
+			echo '	> ${OUTPUT_DIR}/${1}.ovpn' >> ~/client-configs/make_config.sh;
+			chmod +x ~/client-configs/make_config.sh
 
 			echo -e "\n   Server is convigured as:"$ORANGE" $HASH\e[0m"
 
