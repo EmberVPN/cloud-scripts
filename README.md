@@ -5,3 +5,7 @@ chmod +x ./ember
 mv ./ember /usr/bin
 ```
 
+##
+```
+ember
+```
