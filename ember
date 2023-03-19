@@ -100,27 +100,23 @@ function download_csr() {
 
 	echo -ne "   "$GRAY"Requesting server certificate... \e[0m"
 	if [[ $VERB = 1 ]]; then
-
 		echo -e
 		./easyrsa --batch --req-cn="$NAME" gen-req $NAME nopass || errorcheck
 		cp pki/private/$NAME.key /etc/openvpn/server/server.key || errorcheck
-		curl --request POST \
+		SIGNED=$(curl --request POST \
 			--url https://api.embervpn.org/rsa/sign-request \
 			--header 'Content-Type: application/json' \
-			--data '{"req": "'$(base64 -w0 pki/reqs/$NAME.req)'"}' \
-			> /etc/openvpn/server/server.crt || errorcheck
-
+			--data '{"req": "'$(base64 -w0 pki/reqs/$NAME.req)'"}')
 	else
-		
 		./easyrsa --batch --req-cn="$NAME" gen-req $NAME nopass &> /dev/null || errorcheck
 		cp pki/private/$NAME.key /etc/openvpn/server/server.key &> /dev/null || errorcheck
-		curl --request POST \
+		SIGNED=$(curl -s --request POST \
 			--url https://api.embervpn.org/rsa/sign-request \
 			--header 'Content-Type: application/json' \
-			--data '{"req": "'$(base64 -w0 pki/reqs/$NAME.req)'"}' \
-			> /etc/openvpn/server/server.crt &> /dev/null || errorcheck
-
+			--data '{"req": "'$(base64 -w0 pki/reqs/$NAME.req)'"}')
 	fi
+
+	echo "$SIGNED" > /etc/openvpn/server/server.crt
 
 	echo -ne $GREEN"DONE\e[0m\n"
 }
