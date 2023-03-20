@@ -211,7 +211,10 @@ function conf_ufw() {
 		sed -i '/# START OPENVPN RULES/,/# END OPENVPN RULES/d' /etc/ufw/before.rules
 		echo "$RULES" | cat - /etc/ufw/before.rules > temp && mv temp /etc/ufw/before.rules
 		sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/g' /etc/default/ufw
-		sysctl -w net.ipv4.ip_forward=1
+		
+		
+		sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
+
 		ufw allow $PORT/$PROTO
 		ufw allow OpenSSH
 		ufw disable && ufw --force enable
@@ -219,7 +222,10 @@ function conf_ufw() {
 		sed -i '/# START OPENVPN RULES/,/# END OPENVPN RULES/d' /etc/ufw/before.rules &> /dev/null
 		echo "$RULES" | cat - /etc/ufw/before.rules > temp && mv temp /etc/ufw/before.rules &> /dev/null
 		sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/g' /etc/default/ufw &> /dev/null
-		sysctl -w net.ipv4.ip_forward=1 &> /dev/null
+		
+		# Enable port forwarding in sysctl
+		sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf &> /dev/null
+
 		ufw allow $PORT/$PROTO &> /dev/null
 		ufw allow OpenSSH &> /dev/null
 		ufw disable &> /dev/null && ufw --force enable &> /dev/null
