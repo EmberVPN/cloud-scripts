@@ -49,12 +49,18 @@ function install() {
 		apt-get update || errorcheck
 		apt-get upgrade -y || errorcheck
 		apt-get install easy-rsa openvpn curl jq ruby -y || errorcheck
+		snap install docker || errorcheck
 	else
 		apt-get update &> /dev/null || errorcheck
 		apt-get upgrade -y &> /dev/null || errorcheck
 		apt-get install easy-rsa openvpn curl jq ruby -y &> /dev/null || errorcheck
+		snap install docker &> /dev/null || errorcheck
 	fi
 	echo -ne $GREEN"DONE\e[0m\n"
+}
+
+function setupdocker() {
+
 }
 
 # Configure easy-rsa
