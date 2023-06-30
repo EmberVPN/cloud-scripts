@@ -1,7 +1,10 @@
 #!/bin/bash
 export TERM=xterm-256color
-export VERSION="1.0.3"
+export VERSION="1.1.0"
 export VERB=0
+
+# Set if we need to restart
+NEEDS_RESTART=false
 
 # Color stuff
 RED="\e[38;5;196m"
@@ -49,17 +52,60 @@ function install() {
 		apt-get update || errorcheck
 		apt-get upgrade -y || errorcheck
 		apt-get install easy-rsa openvpn curl jq ruby -y || errorcheck
-		snap install docker || errorcheck
 	else
 		apt-get update &> /dev/null || errorcheck
 		apt-get upgrade -y &> /dev/null || errorcheck
 		apt-get install easy-rsa openvpn curl jq ruby -y &> /dev/null || errorcheck
-		snap install docker &> /dev/null || errorcheck
 	fi
-	echo -ne $GREEN"DONE\e[0m\n"
-}
 
-function setupdocker() {
+	# Retrieve the public IPv4 address
+	PUBLIC_IP=$(curl -s http://ipinfo.io/ip)
+
+	# Retrieve the current hostname
+	CURRENT_HOSTNAME=$(hostname)
+
+	# Check if the hostname is the IP address
+	if [ "$CURRENT_HOSTNAME" != "$PUBLIC_IP" ]; then
+
+		# Set the hostname to the public IP address
+		hostnamectl set-hostname "$PUBLIC_IP"
+
+		# Update the /etc/hostname file
+		echo "$PUBLIC_IP" > /etc/hostname
+
+		# Update the /etc/hosts file
+		sed -i "s/$CURRENT_HOSTNAME/$PUBLIC_IP/g" /etc/hosts
+
+		# Set the NEEDS_RESTART variable to true
+		NEEDS_RESTART=true
+
+	fi
+
+	# Set the desired PS1 value
+	export PS1="\[\e[38;5;166m\]Ember VPN\[\e[0m\] \[\e[38;5;155m\][NODE]\[\e[0m\] \[\e[38;5;245m\](\[\e[0m\]$(hostname)\[\e[0m\]\[\e[38;5;245m\])\[\e[0m\] \[\e[38;5;203m\]🔥 \[\e[0m\]"
+
+	# Update the /etc/profile.d/custom-prompt.sh script
+	tee /etc/profile.d/custom-prompt.sh > /dev/null <<EOT
+#!/bin/bash
+export PS1="$PS1"
+EOT
+
+	# Set execute permissions for the script
+	chmod +x /etc/profile.d/custom-prompt.sh
+
+	# Remove any existing PS1 references in other files
+	sed -i '/^PS1=.*/d' /etc/bash.bashrc
+	sed -i '/^PS1=.*/d' /etc/skel/.bashrc
+	sed -i '/^PS1=.*/d' ~/.bashrc
+
+	# Source the custom-prompt.sh script in ~/.bashrc
+	sed -i "/^source \/etc\/profile\.d\/custom-prompt\.sh$/d" ~/.bashrc	
+	echo "source /etc/profile.d/custom-prompt.sh" | tee -a ~/.bashrc > /dev/null
+	source ~/.bashrc
+
+	touch ~/.hushlogin
+
+	echo -ne $GREEN"DONE\e[0m\n"
 
 }
 
@@ -103,6 +149,7 @@ function download_certs() {
 	echo -ne $GREEN"DONE\e[0m\n"
 }
 
+# Download the CSR list
 function download_csr() {
 
 	echo -ne "   "$GRAY"Requesting server certificate... \e[0m"
@@ -128,6 +175,7 @@ function download_csr() {
 	echo -ne $GREEN"DONE\e[0m\n"
 }
 
+# Initialiaze VPN key
 function init_takey() {
 	
 	echo -ne "   "$GRAY"Initializing TLS-Auth key... \e[0m"
@@ -144,6 +192,7 @@ function init_takey() {
 
 }
 
+# Download server config
 function download_conf() {
 	echo -ne "   "$GRAY"Downloading server config... \e[0m"
 	if [[ $VERB = 1 ]]; then
@@ -189,6 +238,7 @@ function download_conf() {
 
 }
 
+# Configure firewall
 function conf_ufw() {
 	echo -ne "   "$GRAY"Configuring Firewall... \e[0m"
 
@@ -243,6 +293,46 @@ function conf_ufw() {
 	echo -ne $GREEN"DONE\e[0m\n"
 }
 
+function openssh_support() {
+
+	# Create VPN user
+	useradd vpn -M -s /bin/false
+
+	# Configure SSH user
+	tee /etc/ssh/sshd_config.d/embervpn.conf > /dev/null <<EOT
+PasswordAuthentication no
+Match user vpn
+        AllowTcpForwarding yes
+		ForceCommand /bin/false
+EOT
+
+
+	# Lock the vpn user account to disable password-based login
+	if [[ $VERB = 1 ]]; then
+		passwd -l vpn
+	else
+		passwd -ql vpn
+	fi
+
+	# Hide login
+	touch /home/vpn/.hushlogin
+
+	# Restart ssh
+	systemctl restart ssh
+
+	# Create ssh folder
+	mkdir -p /home/vpn/.ssh/
+
+	# Create authorized keys file
+	echo "" > /home/vpn/.ssh/authorized_keys
+
+	# Set permissions
+	chmod 700 /home/vpn/.ssh
+	chmod 600 /home/vpn/.ssh/authorized_keys
+	chown vpn:vpn -R /home/vpn
+
+}
+
 # Get command flags and args
 while [ "$1" ]; do
 
@@ -285,6 +375,7 @@ while [ "$1" ]; do
 		enroll)
 			shift
 			install
+			openssh_support
 			init_pki
 			download_certs
 			init_takey
@@ -407,3 +498,10 @@ while [ "$1" ]; do
 	echo -e
 
 done
+
+# If we need to restart
+if [ "$NEEDS_RESTART" = true ]; then
+	read -n 1 -s -r -p "Press any key to reboot..."
+    echo ""
+	reboot
+fi
