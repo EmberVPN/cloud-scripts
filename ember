@@ -274,7 +274,7 @@ function conf_ufw() {
 		sysctl -p
 
 		ufw allow $PORT/$PROTO
-		ufw allow OpenSSH
+		ufw allow 22
 		ufw disable && ufw --force enable
 	else
 		sed -i '/# START OPENVPN RULES/,/# END OPENVPN RULES/d' /etc/ufw/before.rules &> /dev/null
@@ -286,7 +286,7 @@ function conf_ufw() {
 		sysctl -p &> /dev/null
 
 		ufw allow $PORT/$PROTO &> /dev/null
-		ufw allow OpenSSH &> /dev/null
+		ufw allow 22 &> /dev/null
 		ufw disable &> /dev/null && ufw --force enable &> /dev/null
 	fi
 
@@ -501,7 +501,5 @@ done
 
 # If we need to restart
 if [ "$NEEDS_RESTART" = true ]; then
-	read -n 1 -s -r -p "Press any key to reboot..."
-    echo ""
 	reboot
 fi
