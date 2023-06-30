@@ -312,16 +312,16 @@ EOT
 		passwd -l vpn
 	else
 		passwd -ql vpn
-	fi
-
-	# Hide login
-	touch /home/vpn/.hushlogin
+	fi	
 
 	# Restart ssh
 	systemctl restart ssh
 
 	# Create ssh folder
 	mkdir -p /home/vpn/.ssh/
+
+	# Hide login
+	touch /home/vpn/.hushlogin
 
 	# Create authorized keys file
 	echo "" > /home/vpn/.ssh/authorized_keys
