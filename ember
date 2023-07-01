@@ -109,6 +109,31 @@ EOT
 
 }
 
+function sshall() {
+	
+	# Get IP addresses
+	ips=$(curl -s "https://api.embervpn.org/ember/list-servers" | jq -r '.ips[]')
+
+	while true; do
+		echo -ne "\e[38;5;166mEmber VPN \e[38;5;045m[SWARM] \033[0m"
+		read -p "🔥 " input
+		
+		if [[ "$input" == "exit" ]]; then
+			break
+		fi
+
+		if [[ "$input" == $'\x0c' || "$input" == "clear" ]]; then
+			clear
+			continue
+		fi
+		
+		ips_string=$(IFS=" "; echo "${ips[*]}")
+		parallel-ssh -H "$ips_string" "$input"
+
+	done
+
+}
+
 # Configure easy-rsa
 function init_pki() {
 	echo -ne "   "$GRAY"Initializing Easy RSA PKI... \e[0m"
@@ -293,6 +318,7 @@ function conf_ufw() {
 	echo -ne $GREEN"DONE\e[0m\n"
 }
 
+# Add openssh support
 function openssh_support() {
 
 	# Create VPN user
@@ -371,6 +397,10 @@ while [ "$1" ]; do
 			wget "https://raw.githubusercontent.com/EmberVPN/cloud-scripts/main/ember?t=$(date +%s)"
 			chmod +x ./ember*
 			mv ./ember* /usr/bin/ember
+			;;
+		ssh)
+			shift
+			sshall
 			;;
 		enroll)
 			shift
