@@ -58,7 +58,7 @@ function install() {
 		apt-get install easy-rsa openvpn curl jq ruby -y &> /dev/null || errorcheck
 	fi
 
-	# Retrieve the public IPv4 address
+	# Retrieve the public IPv4 & v6 address
 	PUBLIC_IP=$(curl -s http://ipinfo.io/ip)
 
 	# Retrieve the current hostname
@@ -230,7 +230,8 @@ function download_conf() {
 			--url https://api.embervpn.org/rsa/download-server-config \
 			--header 'Content-Type: application/json' \
 			--data '{
-				"ip": "'$IP'",
+				"ipv4": "'$IP'",
+				"ipv6": "'$IP6'",
 				"iface": "'$IFACE'",
 				"network": "'$NETWORK'",
 				"subnet": "'$SUBNET'",
@@ -243,7 +244,8 @@ function download_conf() {
 			--url https://api.embervpn.org/rsa/download-server-config \
 			--header 'Content-Type: application/json' \
 			--data '{
-				"ip": "'$IP'",
+				"ipv4": "'$IP'",
+				"ipv6": "'$IP6'",
 				"iface": "'$IFACE'",
 				"network": "'$NETWORK'",
 				"subnet": "'$SUBNET'",
@@ -435,6 +437,7 @@ while [ "$1" ]; do
 			NAME=$(hostname)
 			IFACE=$(ip r | head -n 1 | awk '{print $5}')
 			IP=$(curl http://checkip.dyndns.org/ 2> /dev/null | ruby -pe '$_=$_.scan(/\d+\.\d+\.\d+\.\d+/)' | jq -r '.[0]')
+			IP6=$(curl -s http://ipv6.icanhazip.com)
 			PORT="1194"
 			PROTO="tcp"
 			NETWORK="10.8.0.0"
@@ -481,7 +484,8 @@ while [ "$1" ]; do
 			echo -e "   "$GRAY"Enrolling with the following parameters:\e[0m"
 			echo -e "   "$GRAY"Name:"$ORANGE" $NAME\e[0m"
 			echo -e "   "$GRAY"Interface:"$ORANGE" $IFACE\e[0m"
-			echo -e "   "$GRAY"IP:"$ORANGE" $IP\e[0m"
+			echo -e "   "$GRAY"IPv4:"$ORANGE" $IP\e[0m"
+			echo -e "   "$GRAY"IPv6:"$ORANGE" $IP6\e[0m"
 			echo -e "   "$GRAY"Port:"$ORANGE" $PORT\e[0m"
 			echo -e "   "$GRAY"Protocol:"$ORANGE" $PROTO\e[0m"
 			echo -e "   "$GRAY"Network:"$ORANGE" $NETWORK\e[0m"
