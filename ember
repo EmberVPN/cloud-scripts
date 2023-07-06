@@ -108,7 +108,7 @@ EOT
 	# Add scripts to the crontab
 	crontab -r
 	(crontab -l 2>/dev/null; echo "* * * * * /usr/bin/curl https://api.embervpn.org/ember/ping?hostname=$(/usr/bin/hostname) >/dev/null 2>&1") | crontab -
-	(crontab -l 2>/dev/null; echo "@reboot sleep 30 && /usr/bin/ember update && /usr/bin/ember enroll >/dev/null 2>&1") | crontab -
+	(crontab -l 2>/dev/null; echo "@reboot /usr/bin/ember update && /usr/bin/ember enroll >/dev/null 2>&1") | crontab -
 
 	echo -ne $GREEN"DONE\e[0m\n"
 
