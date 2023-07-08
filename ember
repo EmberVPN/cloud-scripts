@@ -334,8 +334,10 @@ function openssh_support() {
 	tee /etc/ssh/sshd_config.d/embervpn.conf > /dev/null <<EOT
 PasswordAuthentication no
 Match user vpn
-        AllowTcpForwarding yes
-		ForceCommand /bin/false
+	AllowTcpForwarding yes
+	ForceCommand /bin/false
+	PermitOpen localhost:1194
+	MaxSessions 100000
 EOT
 
 
